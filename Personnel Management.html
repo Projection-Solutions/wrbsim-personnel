@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personnel Tracker - Enterprise Roster System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        govNavy: '#0F172A',
+                        govSlate: '#334155',
+                        govBlue: '#1E40AF',
+                        govAccent: '#2563EB',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Print Specific Styles */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                font-size: 11pt;
+            }
+            .print-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                width: 100% !important;
+            }
+            .print-title {
+                display: block !important;
+            }
+            .table-container {
+                overflow: visible !important;
+                border: 1px solid #cbd5e1 !important;
+            }
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+            th, td {
+                border: 1px solid #94a3b8 !important;
+                padding: 6px 10px !important;
+            }
+            .badge {
+                border: 1px solid #64748b !important;
+                background: transparent !important;
+                color: #000 !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header / Navigation Bar -->
+    <header class="bg-govNavy text-white shadow-md sticky top-0 z-30 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- App Title & Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-govAccent rounded-lg text-white">
+                        <i class="fa-solid me-0 fa-id-card text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight">Personnel Tracker</h1>
+                        <p class="text-xs text-slate-400">Enterprise Roster & Personnel Management</p>
+                    </div>
+                </div>
+
+                <!-- Action Toolbar Header -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <button id="gasSettingsBtn" onclick="toggleGasModal()" class="px-3 py-1.5 text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md transition flex items-center gap-1.5 border border-slate-700">
+                        <i class="fa-solid fa-cloud text-blue-400"></i>
+                        <span class="hidden md:inline">GAS Backend</span>
+                        <span id="gasStatusDot" class="w-2 h-2 rounded-full bg-slate-500 inline-block"></span>
+                    </button>
+                    <button onclick="triggerPrint()" class="px-3 py-1.5 text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md transition flex items-center gap-1.5 border border-slate-700">
+                        <i class="fa-solid fa-print text-amber-400"></i>
+                        <span class="hidden sm:inline">Print / PDF</span>
+                    </button>
+                    <button onclick="openAddModal()" class="px-3.5 py-1.5 text-xs sm:text-sm font-medium bg-govAccent hover:bg-blue-600 text-white rounded-md shadow transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>Add Person</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Print-only Title Header -->
+    <div class="hidden print-title p-4 border-b border-slate-300">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">OFFICIAL PERSONNEL ROSTER</h1>
+                <p class="text-sm text-slate-600">Generated: <span id="printDate"></span></p>
+            </div>
+            <div class="text-right text-xs text-slate-500">
+                <span>Classification: UNCLASSIFIED / FOUO</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 print-container">
+
+        <!-- Top Dashboard / Metrics Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <!-- Total Count Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Total Personnel</p>
+                    <h3 id="countTotal" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">0</h3>
+                </div>
+                <div class="p-3 bg-slate-100 text-slate-700 rounded-lg">
+                    <i class="fa-solid fa-users text-xl"></i>
+                </div>
+            </div>
+
+            <!-- GS Count Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold tracking-wider text-emerald-600 uppercase">GS Staff</p>
+                    <h3 id="countGS" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">0</h3>
+                </div>
+                <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+                    <i class="fa-solid fa-user-tie text-xl"></i>
+                </div>
+            </div>
+
+            <!-- CTR Count Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold tracking-wider text-amber-600 uppercase">Contractors</p>
+                    <h3 id="countCTR" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">0</h3>
+                </div>
+                <div class="p-3 bg-amber-50 text-amber-600 rounded-lg">
+                    <i class="fa-solid fa-briefcase text-xl"></i>
+                </div>
+            </div>
+
+            <!-- MIL Count Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold tracking-wider text-indigo-600 uppercase">Military</p>
+                    <h3 id="countMIL" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">0</h3>
+                </div>
+                <div class="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+                    <i class="fa-solid fa-person-military-rifle text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Bar: Search, Filter, Data Import/Export -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 no-print">
+            <div class="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+                
+                <!-- Search Box -->
+                <div class="relative flex-grow max-w-md">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <input type="text" id="searchInput" oninput="renderTable()" placeholder="Search by name, title, or service..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white outline-none transition">
+                </div>
+
+                <!-- Filters & Utilities -->
+                <div class="flex flex-wrap items-center gap-3">
+                    
+                    <!-- Type Filter -->
+                    <select id="typeFilter" onchange="renderTable()" class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none">
+                        <option value="ALL">All Types</option>
+                        <option value="GS">GS (Civ)</option>
+                        <option value="CTR">CTR (Contractor)</option>
+                        <option value="MIL">MIL (Military)</option>
+                    </select>
+
+                    <!-- Service Filter -->
+                    <select id="serviceFilter" onchange="renderTable()" class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none">
+                        <option value="ALL">All Services</option>
+                        <option value="Army">Army</option>
+                        <option value="Navy">Navy</option>
+                        <option value="Air Force">Air Force</option>
+                        <option value="Marine Corps">Marine Corps</option>
+                        <option value="Space Force">Space Force</option>
+                        <option value="Coast Guard">Coast Guard</option>
+                        <option value="DoD / Joint">DoD / Joint</option>
+                        <option value="N/A">N/A</option>
+                    </select>
+
+                    <!-- Sort By -->
+                    <select id="sortBy" onchange="renderTable()" class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none">
+                        <option value="name_asc">Sort: Name (A-Z)</option>
+                        <option value="name_desc">Sort: Name (Z-A)</option>
+                        <option value="type">Sort: Type</option>
+                        <option value="service">Sort: Service</option>
+                    </select>
+
+                    <!-- Import/Export JSON Actions -->
+                    <div class="flex items-center space-x-1 border-l border-slate-200 pl-3">
+                        <button onclick="exportJSON()" title="Export JSON" class="p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition">
+                            <i class="fa-solid fa-download text-lg"></i>
+                        </button>
+                        <label title="Import JSON" class="p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition cursor-pointer">
+                            <i class="fa-solid fa-file-import text-lg"></i>
+                            <input type="file" id="importFileInput" accept=".json" onchange="importJSON(event)" class="hidden">
+                        </label>
+                        <button onclick="syncWithGAS()" title="Sync with Google Sheets" class="p-2 text-slate-600 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition">
+                            <i class="fa-solid fa-arrows-rotate text-lg"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden table-container">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-800 text-slate-200 text-xs font-semibold uppercase tracking-wider">
+                        <tr>
+                            <th scope="col" class="px-6 py-3.5">Name</th>
+                            <th scope="col" class="px-6 py-3.5">Personnel Type</th>
+                            <th scope="col" class="px-6 py-3.5">Title / Position</th>
+                            <th scope="col" class="px-6 py-3.5">Service / Org</th>
+                            <th scope="col" class="px-6 py-3.5 text-right no-print">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="personnelTableBody" class="divide-y divide-slate-200 bg-white">
+                        <!-- Dynamic Rows injected here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State Display -->
+            <div id="emptyState" class="hidden py-12 text-center text-slate-500">
+                <i class="fa-regular fa-folder-open text-4xl mb-3 text-slate-300"></i>
+                <p class="text-base font-medium">No personnel found</p>
+                <p class="text-xs text-slate-400 mt-1">Try adjusting search filters or add a new personnel record.</p>
+            </div>
+        </div>
+
+        <!-- Roster Footer Info -->
+        <div class="mt-4 flex justify-between items-center text-xs text-slate-500 no-print">
+            <span id="recordCountInfo">Showing 0 entries</span>
+            <span>Local Storage Active</span>
+        </div>
+    </main>
+
+    <!-- Modal: Add / Edit Personnel -->
+    <div id="personnelModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
+            <!-- Modal Header -->
+            <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+                <h3 id="modalTitle" class="text-base font-bold">Add New Personnel</h3>
+                <button onclick="closeAddModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="personnelForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="editIndex" value="-1">
+                
+                <!-- Name Field -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Full Name *</label>
+                    <input type="text" id="fieldName" required placeholder="e.g. John Doe" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <!-- Personnel Type Field -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Personnel Type *</label>
+                    <select id="fieldType" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="GS">GS (Civilian)</option>
+                        <option value="CTR">CTR (Contractor)</option>
+                        <option value="MIL">MIL (Military)</option>
+                    </select>
+                </div>
+
+                <!-- Title Field -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Title / Position *</label>
+                    <input type="text" id="fieldTitle" required placeholder="e.g. Program Analyst / LTC" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <!-- Service Field -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Service / Branch *</label>
+                    <select id="fieldService" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="Army">Army</option>
+                        <option value="Navy">Navy</option>
+                        <option value="Air Force">Air Force</option>
+                        <option value="Marine Corps">Marine Corps</option>
+                        <option value="Space Force">Space Force</option>
+                        <option value="Coast Guard">Coast Guard</option>
+                        <option value="DoD / Joint">DoD / Joint</option>
+                        <option value="N/A">N/A</option>
+                    </select>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium bg-govAccent hover:bg-blue-600 text-white rounded-lg shadow transition">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: GAS Integration Panel -->
+    <div id="gasModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-blue-400"></i>
+                    <h3 class="text-base font-bold">Google Apps Script (GAS) Integration</h3>
+                </div>
+                <button onclick="toggleGasModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content Body -->
+            <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-600">
+                
+                <!-- Webhook URL Input -->
+                <div class="space-y-2">
+                    <label class="block font-semibold text-slate-800">GAS Web App URL Endpoint</label>
+                    <p class="text-xs text-slate-500">Paste your published Google Apps Script Web App URL below to sync roster data with a Google Sheet.</p>
+                    <div class="flex gap-2">
+                        <input type="url" id="gasUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="flex-grow px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
+                        <button onclick="saveGasUrl()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-medium transition">Save</button>
+                    </div>
+                </div>
+
+                <!-- Code Generator / Guide Section -->
+                <div class="border-t border-slate-200 pt-4">
+                    <h4 class="font-bold text-slate-800 mb-2">Google Apps Script Code Snippet</h4>
+                    <p class="text-xs text-slate-500 mb-3">Copy and paste this script into your Google Sheets Apps Script editor (<code class="bg-slate-100 px-1 py-0.5 rounded text-red-500">Extensions > Apps Script</code>) to enable automated syncing.</p>
+                    
+                    <div class="relative bg-slate-900 text-slate-200 p-4 rounded-lg font-mono text-xs overflow-x-auto max-h-60 border border-slate-800">
+                        <button onclick="copyGasCode()" class="absolute top-2 right-2 bg-slate-800 hover:bg-slate-700 text-xs px-2.5 py-1 rounded border border-slate-700 text-slate-300">
+                            <i class="fa-regular fa-copy mr-1"></i>Copy Code
+                        </button>
+<pre id="gasCodeText">// Apps Script Code - Paste into Google Sheet Script Editor
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  var headers = data.shift();
+  var result = data.map(function(row) {
+    return { name: row[0], type: row[1], title: row[2], service: row[3] };
+  });
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var body = JSON.parse(e.postData.contents);
+  sheet.clear();
+  sheet.appendRow(["Name", "Type", "Title", "Service"]);
+  body.forEach(function(item) {
+    sheet.appendRow([item.name, item.type, item.title, item.service]);
+  });
+  return ContentService.createTextOutput(JSON.stringify({status: "success"}))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 border-l-4 border-amber-400 p-3 rounded text-xs text-amber-800">
+                    <p class="font-semibold"><i class="fa-solid fa-circle-info mr-1"></i> Deployment Note:</p>
+                    <p>When deploying in Google Apps Script, set <strong>Execute as:</strong> "Me" and <strong>Who has access:</strong> "Anyone".</p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex justify-end">
+                <button onclick="toggleGasModal()" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-medium hover:bg-slate-700 transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 no-print"></div>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        // Sample Initial Dataset
+        const initialPersonnel = [
+            { name: "Eleanor Vance", type: "GS", title: "Senior Program Manager (GS-14)", service: "DoD / Joint" },
+            { name: "Marcus Brody", type: "CTR", title: "Lead Systems Architect", service: "N/A" },
+            { name: "CDR James Miller", type: "MIL", title: "Operations Officer (O-5)", service: "Navy" },
+            { name: "Sarah Chen", type: "GS", title: "Data Analyst (GS-12)", service: "Air Force" },
+            { name: "Capt David Ross", type: "MIL", title: "Cybersecurity Lead (O-3)", service: "Space Force" },
+            { name: "Robert Taylor", type: "CTR", title: "Database Administrator", service: "Army" }
+        ];
+
+        // State Storage
+        let personnelList = [];
+        let gasUrl = localStorage.getItem("gas_url") || "";
+
+        // On Page Load Initialize
+        window.addEventListener("DOMContentLoaded", () => {
+            loadPersonnelData();
+            if (gasUrl) {
+                document.getElementById("gasUrlInput").value = gasUrl;
+                updateGasStatus(true);
+            }
+            renderTable();
+        });
+
+        // Load Initial or Saved Data
+        function loadPersonnelData() {
+            const stored = localStorage.getItem("personnel_roster_data");
+            if (stored) {
+                try {
+                    personnelList = JSON.parse(stored);
+                } catch(e) {
+                    personnelList = [...initialPersonnel];
+                }
+            } else {
+                personnelList = [...initialPersonnel];
+                saveData();
+            }
+        }
+
+        // Save Data to Local Storage
+        function saveData() {
+            localStorage.setItem("personnel_roster_data", JSON.stringify(personnelList));
+        }
+
+        // Render Table & Update Metrics
+        function renderTable() {
+            const tableBody = document.getElementById("personnelTableBody");
+            const emptyState = document.getElementById("emptyState");
+            const searchVal = document.getElementById("searchInput").value.toLowerCase().trim();
+            const typeFilterVal = document.getElementById("typeFilter").value;
+            const serviceFilterVal = document.getElementById("serviceFilter").value;
+            const sortByVal = document.getElementById("sortBy").value;
+
+            // Filter logic
+            let filtered = personnelList.filter(p => {
+                const matchesSearch = p.name.toLowerCase().includes(searchVal) ||
+                                      p.title.toLowerCase().includes(searchVal) ||
+                                      p.service.toLowerCase().includes(searchVal);
+                const matchesType = (typeFilterVal === "ALL") || (p.type === typeFilterVal);
+                const matchesService = (serviceFilterVal === "ALL") || (p.service === serviceFilterVal);
+                return matchesSearch && matchesType && matchesService;
+            });
+
+            // Sorting logic
+            filtered.sort((a, b) => {
+                if (sortByVal === "name_asc") return a.name.localeCompare(b.name);
+                if (sortByVal === "name_desc") return b.name.localeCompare(a.name);
+                if (sortByVal === "type") return a.type.localeCompare(b.type);
+                if (sortByVal === "service") return a.service.localeCompare(b.service);
+                return 0;
+            });
+
+            // Update Metric Counts (Total across raw list, or filtered if preferred - standard is active counts)
+            updateDashboardMetrics();
+
+            // Clear existing rows
+            tableBody.innerHTML = "";
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove("hidden");
+            } else {
+                emptyState.classList.add("hidden");
+                filtered.forEach((person) => {
+                    // Find actual original index in personnelList for editing
+                    const originalIndex = personnelList.indexOf(person);
+
+                    const tr = document.createElement("tr");
+                    tr.className = "hover:bg-slate-50/80 transition border-b border-slate-200";
+
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 font-semibold text-slate-900 flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold no-print">
+                                ${getInitials(person.name)}
+                            </div>
+                            <span>${escapeHtml(person.name)}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            ${getTypeBadge(person.type)}
+                        </td>
+                        <td class="px-6 py-4 text-slate-700">${escapeHtml(person.title)}</td>
+                        <td class="px-6 py-4 text-slate-700">
+                            <span class="inline-flex items-center gap-1.5">
+                                <i class="fa-solid fa-shield-halved text-slate-400 text-xs"></i>
+                                ${escapeHtml(person.service)}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right space-x-2 no-print">
+                            <button onclick="openEditModal(${originalIndex})" title="Edit" class="text-slate-500 hover:text-blue-600 p-1 transition">
+                                <i class="fa-regular fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="deletePerson(${originalIndex})" title="Delete" class="text-slate-500 hover:text-red-600 p-1 transition">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            }
+
+            document.getElementById("recordCountInfo").innerText = `Showing ${filtered.length} of ${personnelList.length} personnel`;
+        }
+
+        // Helper: Dashboard Counters
+        function updateDashboardMetrics() {
+            const total = personnelList.length;
+            const gsCount = personnelList.filter(p => p.type === 'GS').length;
+            const ctrCount = personnelList.filter(p => p.type === 'CTR').length;
+            const milCount = personnelList.filter(p => p.type === 'MIL').length;
+
+            document.getElementById("countTotal").innerText = total;
+            document.getElementById("countGS").innerText = gsCount;
+            document.getElementById("countCTR").innerText = ctrCount;
+            document.getElementById("countMIL").innerText = milCount;
+        }
+
+        // Helper Badge Renderer
+        function getTypeBadge(type) {
+            switch(type) {
+                case 'GS':
+                    return `<span class="badge px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">GS</span>`;
+                case 'CTR':
+                    return `<span class="badge px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 border border-amber-200">CTR</span>`;
+                case 'MIL':
+                    return `<span class="badge px-2.5 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">MIL</span>`;
+                default:
+                    return `<span class="badge px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-800">${type}</span>`;
+            }
+        }
+
+        // Modal Operations
+        function openAddModal() {
+            document.getElementById("editIndex").value = "-1";
+            document.getElementById("modalTitle").innerText = "Add New Personnel";
+            document.getElementById("personnelForm").reset();
+            document.getElementById("personnelModal").classList.remove("hidden");
+        }
+
+        function openEditModal(index) {
+            const person = personnelList[index];
+            if (!person) return;
+
+            document.getElementById("editIndex").value = index;
+            document.getElementById("modalTitle").innerText = "Edit Personnel Record";
+            document.getElementById("fieldName").value = person.name;
+            document.getElementById("fieldType").value = person.type;
+            document.getElementById("fieldTitle").value = person.title;
+            document.getElementById("fieldService").value = person.service;
+
+            document.getElementById("personnelModal").classList.remove("hidden");
+        }
+
+        function closeAddModal() {
+            document.getElementById("personnelModal").classList.add("hidden");
+        }
+
+        // Form Submit Handler
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const index = parseInt(document.getElementById("editIndex").value);
+            
+            const newEntry = {
+                name: document.getElementById("fieldName").value.trim(),
+                type: document.getElementById("fieldType").value,
+                title: document.getElementById("fieldTitle").value.trim(),
+                service: document.getElementById("fieldService").value
+            };
+
+            if (index >= 0) {
+                personnelList[index] = newEntry;
+                showToast("Personnel record updated successfully");
+            } else {
+                personnelList.push(newEntry);
+                showToast("New personnel added to roster");
+            }
+
+            saveData();
+            renderTable();
+            closeAddModal();
+
+            // Auto sync to GAS if configured
+            if (gasUrl) {
+                syncWithGAS(true);
+            }
+        }
+
+        // Delete Entry
+        function deletePerson(index) {
+            if (confirm(`Are you sure you want to remove ${personnelList[index].name} from the roster?`)) {
+                personnelList.splice(index, 1);
+                saveData();
+                renderTable();
+                showToast("Record deleted", "info");
+
+                if (gasUrl) {
+                    syncWithGAS(true);
+                }
+            }
+        }
+
+        // JSON Export Function
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(personnelList, null, 2));
+            const downloadAnchor = document.createElement('a');
+            const dateStr = new Date().toISOString().slice(0,10);
+            
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `personnel_roster_${dateStr}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+
+            showToast("JSON file exported successfully");
+        }
+
+        // JSON Import Function
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (Array.isArray(parsed)) {
+                        // Basic validation of fields
+                        const isValid = parsed.every(p => p.name && p.type && p.title && p.service);
+                        if (isValid) {
+                            if (confirm(`Import ${parsed.length} personnel records? This will overwrite current list.`)) {
+                                personnelList = parsed;
+                                saveData();
+                                renderTable();
+                                showToast(`Successfully imported ${parsed.length} records`);
+                            }
+                        } else {
+                            alert("Invalid file format: JSON objects must contain name, type, title, and service fields.");
+                        }
+                    } else {
+                        alert("Invalid JSON format. Expected an array of personnel records.");
+                    }
+                } catch (err) {
+                    alert("Failed to parse JSON file.");
+                }
+            };
+            reader.readAsText(file);
+            // Reset input
+            event.target.value = '';
+        }
+
+        // Print / Export PDF Handler
+        function triggerPrint() {
+            document.getElementById("printDate").innerText = new Date().toLocaleDateString('en-US', {
+                year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            window.print();
+        }
+
+        // GAS Settings Functions
+        function toggleGasModal() {
+            const modal = document.getElementById("gasModal");
+            modal.classList.toggle("hidden");
+        }
+
+        function saveGasUrl() {
+            const url = document.getElementById("gasUrlInput").value.trim();
+            gasUrl = url;
+            localStorage.setItem("gas_url", url);
+            updateGasStatus(!!url);
+            showToast(url ? "GAS Webhook URL saved" : "GAS Webhook URL cleared");
+        }
+
+        function updateGasStatus(active) {
+            const dot = document.getElementById("gasStatusDot");
+            if (active) {
+                dot.className = "w-2 h-2 rounded-full bg-emerald-400 inline-block";
+            } else {
+                dot.className = "w-2 h-2 rounded-full bg-slate-500 inline-block";
+            }
+        }
+
+        function copyGasCode() {
+            const code = document.getElementById("gasCodeText").innerText;
+            
+            // Clipboard copy fallbacks
+            const textarea = document.createElement('textarea');
+            textarea.value = code;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            showToast("GAS Script copied to clipboard");
+        }
+
+        // Sync with Google Apps Script Endpoint
+        async function syncWithGAS(silent = false) {
+            if (!gasUrl) {
+                if (!silent) {
+                    toggleGasModal();
+                    showToast("Please configure Google Apps Script Web App URL first", "warning");
+                }
+                return;
+            }
+
+            try {
+                if (!silent) showToast("Syncing with Google Sheets...", "info");
+                
+                const response = await fetch(gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors', // standard for GAS webapps
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(personnelList)
+                });
+
+                showToast("Roster synced to Google Sheets");
+            } catch (error) {
+                console.error("GAS Sync Error:", error);
+                showToast("Failed to sync with GAS backend", "error");
+            }
+        }
+
+        // Utility Functions
+        function getInitials(name) {
+            if (!name) return "P";
+            return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;")
+                      .replace(/"/g, "&quot;")
+                      .replace(/'/g, "&#039;");
+        }
+
+        // Custom Toast Notification System
+        function showToast(message, type = "success") {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+
+            let bgColor = "bg-slate-800 text-white";
+            let icon = "fa-circle-check text-emerald-400";
+
+            if (type === "warning") {
+                bgColor = "bg-amber-800 text-white";
+                icon = "fa-triangle-exclamation text-amber-300";
+            } else if (type === "error") {
+                bgColor = "bg-red-800 text-white";
+                icon = "fa-circle-xmark text-red-300";
+            } else if (type === "info") {
+                bgColor = "bg-slate-800 text-white";
+                icon = "fa-circle-info text-blue-400";
+            }
+
+            toast.className = `${bgColor} px-4 py-3 rounded-lg shadow-lg text-xs font-medium flex items-center gap-2 transition duration-300 transform translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i> <span>${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove("translate-y-2", "opacity-0");
+            }, 10);
+
+            // Dismiss after 3 seconds
+            setTimeout(() => {
+                toast.classList.add("opacity-0");
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
