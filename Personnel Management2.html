@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Department of Simulation - Personnel Management Record</title>
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-color: #cbd5e1;
+      --primary: #1e293b;
+      --primary-hover: #334155;
+      --accent-blue: #2563eb;
+      --accent-green: #16a34a;
+      --accent-red: #dc2626;
+      --accent-amber: #d97706;
+      --row-hover: #f1f5f9;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 16px;
+    }
+
+    .header-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .gas-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #94a3b8;
+    }
+
+    .status-dot.active {
+      background-color: var(--accent-green);
+    }
+
+    .status-dot.syncing {
+      background-color: var(--accent-amber);
+    }
+
+    /* Metrics Bar */
+    .metrics-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .metric-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .metric-value {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 4px;
+    }
+
+    /* Controls & Actions Toolbar */
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      background: var(--card-bg);
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: var(--card-bg);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn:hover {
+      background-color: var(--row-hover);
+      border-color: #94a3b8;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    .btn-success {
+      background-color: var(--accent-green);
+      color: #ffffff;
+      border-color: var(--accent-green);
+    }
+
+    .btn-success:hover {
+      background-color: #15803d;
+    }
+
+    .btn-danger {
+      color: var(--accent-red);
+      border-color: #fca5a5;
+    }
+
+    .btn-danger:hover {
+      background-color: #fef2f2;
+      border-color: var(--accent-red);
+    }
+
+    /* Search Input Styling */
+    .search-input {
+      padding: 8px 12px;
+      font-size: 0.875rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      min-width: 240px;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
+    /* Table & Card Container */
+    .card-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+
+    .card-header {
+      background-color: #f1f5f9;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 0.9rem;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      transition: max-height 0.3s ease;
+    }
+
+    .table-container.collapsed {
+      display: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f8fafc;
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 12px 16px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: var(--row-hover);
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 0.9rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: #ffffff;
+      color: var(--text-main);
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus, select:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
+    .btn-icon {
+      padding: 6px 10px;
+      font-size: 0.8rem;
+    }
+
+    /* Print Specific Rules */
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+        color: #000000;
+      }
+
+      .toolbar, .btn, .gas-status, .btn-icon, .actions-cell, .actions-header, .system-banner, .card-header button {
+        display: none !important;
+      }
+
+      .card-container, .metric-card {
+        border: 1px solid #000000 !important;
+        box-shadow: none !important;
+      }
+
+      .table-container.collapsed {
+        display: block !important;
+      }
+
+      th {
+        background-color: #f0f0f0 !important;
+        color: #000000 !important;
+      }
+
+      input[type="text"], select {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        appearance: none;
+        -webkit-appearance: none;
+      }
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .system-banner {
+      background-color: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      padding: 10px 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-title-row">
+      <div>
+        <h1>Department of Simulation - Personnel Management Record</h1>
+      </div>
+
+      <div class="gas-status">
+        <span class="status-dot" id="gasDot"></span>
+        <span id="gasStatusText">Connecting...</span>
+      </div>
+    </div>
+
+    <!-- Live Dynamic Metrics Header -->
+    <div class="metrics-container">
+      <div class="metric-card">
+        <span class="metric-label">Total Personnel</span>
+        <span class="metric-value" id="countTotal">0</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">GS (Civilian)</span>
+        <span class="metric-value" id="countGS">0</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">CTR (Contractor)</span>
+        <span class="metric-value" id="countCTR">0</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">MIL (Military)</span>
+        <span class="metric-value" id="countMIL">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div class="system-banner">
+    <span><strong>Auto-Sync Active:</strong> Changes sync automatically with Google Sheets in the background.</span>
+    <button class="btn btn-primary" onclick="fetchFromGAS()" style="padding: 4px 10px; font-size: 0.75rem;">Force Refresh from Sheets</button>
+  </div>
+
+  <!-- Primary Controls Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-group">
+      <button class="btn btn-primary" onclick="addRow()">
+        ➕ Add Personnel Row
+      </button>
+      <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search personnel by name..." oninput="renderTable()">
+    </div>
+
+    <div class="toolbar-group">
+      <button class="btn" onclick="exportJSON()">
+        💾 Export JSON
+      </button>
+      <button class="btn" onclick="document.getElementById('fileInput').click()">
+        📂 Import JSON
+      </button>
+      <input type="file" id="fileInput" accept=".json" onchange="importJSON(event)">
+      
+      <button class="btn btn-success" onclick="window.print()">
+        🖨️ Print / PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Roster Card with Collapse/Expand -->
+  <div class="card-container">
+    <div class="card-header">
+      <span>Personnel Roster</span>
+      <button class="btn" onclick="toggleTableCollapse()" id="collapseBtn" style="padding: 4px 10px; font-size: 0.75rem;">
+        Collapse Roster 🔼
+      </button>
+    </div>
+    <div class="table-container" id="tableContainer">
+      <table id="personnelTable">
+        <thead>
+          <tr>
+            <th style="width: 25%;">Name</th>
+            <th style="width: 15%;">Type</th>
+            <th style="width: 30%;">Title</th>
+            <th style="width: 20%;">Service</th>
+            <th style="width: 10%; text-align: center;" class="actions-header">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="personnelTableBody">
+          <!-- Rows dynamically injected here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxfdw6DkqL_vbNvTjmr5_Wx-o0AlRjLImfC6GxZxhC2BAzX_-yICqw48vku9pAhjxSB/exec';
+
+    let personnelList = [];
+    let syncTimeout = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('simulation_personnel_data');
+      if (saved) {
+        try {
+          personnelList = JSON.parse(saved);
+        } catch (e) {
+          console.error('Error parsing stored data', e);
+        }
+      }
+      renderTable();
+      fetchFromGAS();
+    });
+
+    function saveData() {
+      localStorage.setItem('simulation_personnel_data', JSON.stringify(personnelList));
+      updateMetrics();
+      triggerAutoSync();
+    }
+
+    function triggerAutoSync() {
+      setGasStatus('syncing', 'Syncing changes...');
+      clearTimeout(syncTimeout);
+      
+      syncTimeout = setTimeout(() => {
+        pushToGAS();
+      }, 1200);
+    }
+
+    async function pushToGAS() {
+      try {
+        await fetch(GAS_ENDPOINT, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ data: personnelList })
+        });
+        setGasStatus('active', 'Synced with Sheets');
+      } catch (err) {
+        console.error('GAS Auto-Sync Error:', err);
+        setGasStatus('active', 'Offline / Cached');
+      }
+    }
+
+    async function fetchFromGAS() {
+      setGasStatus('syncing', 'Fetching from Sheets...');
+
+      try {
+        const response = await fetch(`${GAS_ENDPOINT}?action=getData`);
+        if (!response.ok) throw new Error('Network error during fetch');
+        
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          personnelList = data;
+          renderTable();
+          localStorage.setItem('simulation_personnel_data', JSON.stringify(personnelList));
+        }
+        setGasStatus('active', 'Connected to Sheets');
+      } catch (err) {
+        console.warn('GET fetch restricted or failed:', err);
+        setGasStatus('active', 'Connected (Local Cache)');
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('personnelTableBody');
+      const searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+      tbody.innerHTML = '';
+
+      const filteredList = personnelList.filter(p => {
+        const nameMatch = (p.name || '').toLowerCase().includes(searchQuery);
+        const titleMatch = (p.title || '').toLowerCase().includes(searchQuery);
+        const serviceMatch = (p.service || '').toLowerCase().includes(searchQuery);
+        const typeMatch = (p.type || '').toLowerCase().includes(searchQuery);
+        return nameMatch || titleMatch || serviceMatch || typeMatch;
+      });
+
+      if (filteredList.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-muted);">
+              ${personnelList.length === 0 ? 'No personnel records found. Click <strong>Add Personnel Row</strong> to begin.' : 'No matching personnel found.'}
+            </td>
+          </tr>
+        `;
+        updateMetrics();
+        return;
+      }
+
+      filteredList.forEach((person) => {
+        // Find actual index in original un-filtered array for edits/deletes
+        const realIndex = personnelList.findIndex(item => item.id === person.id);
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+          <td>
+            <input type="text" value="${escapeHtml(person.name || '')}" 
+              placeholder="Full Name" 
+              oninput="updateField(${realIndex}, 'name', this.value)">
+          </td>
+          <td>
+            <select onchange="updateField(${realIndex}, 'type', this.value)">
+              <option value="GS" ${person.type === 'GS' ? 'selected' : ''}>GS</option>
+              <option value="CTR" ${person.type === 'CTR' ? 'selected' : ''}>CTR</option>
+              <option value="MIL" ${person.type === 'MIL' ? 'selected' : ''}>MIL</option>
+            </select>
+          </td>
+          <td>
+            <input type="text" value="${escapeHtml(person.title || '')}" 
+              placeholder="Job Title / Position" 
+              oninput="updateField(${realIndex}, 'title', this.value)">
+          </td>
+          <td>
+            <input type="text" value="${escapeHtml(person.service || '')}" 
+              placeholder="Service / Dept" 
+              oninput="updateField(${realIndex}, 'service', this.value)">
+          </td>
+          <td style="text-align: center;" class="actions-cell">
+            <button class="btn btn-danger btn-icon" onclick="deleteRow(${realIndex})" title="Remove Row">
+              🗑️
+            </button>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      updateMetrics();
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function updateField(index, field, value) {
+      if (personnelList[index]) {
+        personnelList[index][field] = value;
+        updateMetrics();
+        triggerAutoSync();
+      }
+    }
+
+    function addRow() {
+      personnelList.push({
+        id: 'p_' + Date.now(),
+        name: '',
+        type: 'GS',
+        title: '',
+        service: ''
+      });
+      document.getElementById('searchInput').value = ''; // Reset search filter so new row is visible
+      renderTable();
+      saveData();
+      
+      const inputs = document.querySelectorAll('#personnelTableBody tr:last-child input');
+      if (inputs.length > 0) inputs[0].focus();
+    }
+
+    function deleteRow(index) {
+      personnelList.splice(index, 1);
+      renderTable();
+      saveData();
+    }
+
+    function toggleTableCollapse() {
+      const container = document.getElementById('tableContainer');
+      const btn = document.getElementById('collapseBtn');
+      container.classList.toggle('collapsed');
+      if (container.classList.contains('collapsed')) {
+        btn.innerText = 'Expand Roster 🔽';
+      } else {
+        btn.innerText = 'Collapse Roster 🔼';
+      }
+    }
+
+    function updateMetrics() {
+      const total = personnelList.length;
+      let gsCount = 0;
+      let ctrCount = 0;
+      let milCount = 0;
+
+      personnelList.forEach(p => {
+        if (p.type === 'GS') gsCount++;
+        else if (p.type === 'CTR') ctrCount++;
+        else if (p.type === 'MIL') milCount++;
+      });
+
+      document.getElementById('countTotal').innerText = total;
+      document.getElementById('countGS').innerText = gsCount;
+      document.getElementById('countCTR').innerText = ctrCount;
+      document.getElementById('countMIL').innerText = milCount;
+    }
+
+    function exportJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(personnelList, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `simulation_personnel_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          if (Array.isArray(importedData)) {
+            personnelList = importedData.map(item => ({
+              id: item.id || ('p_' + Math.random().toString(36).substr(2, 9)),
+              name: item.name || '',
+              type: ['GS', 'CTR', 'MIL'].includes(item.type) ? item.type : 'GS',
+              title: item.title || '',
+              service: item.service || ''
+            }));
+            renderTable();
+            saveData();
+            alert('Personnel list imported successfully!');
+          } else {
+            alert('Invalid JSON structure: Output must be an array of objects.');
+          }
+        } catch (err) {
+          alert('Error parsing JSON file: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function setGasStatus(status, text) {
+      const dot = document.getElementById('gasDot');
+      const label = document.getElementById('gasStatusText');
+
+      dot.className = 'status-dot';
+      if (status === 'active') dot.classList.add('active');
+      if (status === 'syncing') dot.classList.add('syncing');
+
+      label.innerText = text;
+    }
+  </script>
+</body>
+</html>
